@@ -17,8 +17,6 @@ contract EventFactory is ERC721URIStorage, EIP712 {
     string private _tablePrefix;
     string private _externalURL;
 
-    // string private tokenURI;
-
     constructor(
         string memory baseURI,
         string memory externalURL
@@ -97,9 +95,9 @@ contract EventFactory is ERC721URIStorage, EIP712 {
      * erc721 compliant metadata JSON. here, we do a simple SELECT statement
      * with function that converts the result into json.
      */
-    function tokenURIFunc(
+    function tokenURI(
         uint256 eventId
-    ) public view virtual returns (string memory) {
+    ) public view virtual override returns (string memory) {
         require(
             _exists(eventId),
             "ERC721URIStorage: URI query for nonexistent token"
