@@ -166,13 +166,22 @@ contract EventFactory is ERC721URIStorage, EIP712 {
 
     function modifyTokenURI(
         uint _eventId,
-        string name,
+        string memory name,
         string memory _tokenURI,
         address creator,
         address buyer
     ) public {
         // Update the row in tableland
-        string memory setters = string.concat("name=", name,",uri=",_tokenURI,",creator=",Strings.toString(creator),",buyer="Strings.toString(buyer));
+        string memory setters = string.concat(
+            "name=",
+            name,
+            ",uri=",
+            _tokenURI,
+            ",creator=",
+            Strings.toHexString(uint256(uint160(creator)), 20),
+            ",buyer=",
+            Strings.toHexString(uint256(uint160(buyer)), 20)
+        );
         // Only update the row with the matching `id`
         string memory filters = string.concat(
             "eventId=",
@@ -219,7 +228,6 @@ contract EventFactory is ERC721URIStorage, EIP712 {
     function setSignature(bytes memory _sig, uint _eventId) public {
         idToSignature[_eventId] = _sig;
     }
-   
 
     function redeem(
         address redeemer,
@@ -235,7 +243,7 @@ contract EventFactory is ERC721URIStorage, EIP712 {
         _transfer(signer, redeemer, voucher.eventId);
         // updation of global variables
         // idToSignature[voucher.eventId] = 0;
-        idToEventNFTVoucher[voucher.eventId] = EventVoucher(0,0x0,0x0);
+        idToEventNFTVoucher[voucher.eventId] = EventVoucher(0, address(0), 0);
         idToEventNFT[voucher.eventId] = EventNFT(
             voucher.eventId,
             voucher.creator,
@@ -244,64 +252,58 @@ contract EventFactory is ERC721URIStorage, EIP712 {
             redeemer
         );
     }
-    // for getting scheduled events 
- function getScheduledEvents() public returns(EventVoucher[] memory){
-    uint totalItemCount = _tokenIds.current();
+
+    // for getting scheduled events
+    function getScheduledEvents() public view returns (EventVoucher[] memory) {
+        uint totalItemCount = _eventIds.current();
         uint itemCount = 0;
         uint currentIndex = 0;
         uint currentId;
-        
+
         for (uint i = 0; i < totalItemCount; i++) {
-            if (
-              idToEventNFT[i].id !=0
-            ) {
+            if (idToEventNFT[i].eventId != 0) {
                 itemCount += 1;
             }
         }
 
-      
-       EventVoucher[] memory items = new  EventVoucher[](itemCount);
+        EventVoucher[] memory items = new EventVoucher[](itemCount);
         for (uint i = 0; i < totalItemCount; i++) {
-            if (
-              idToEventNFT[i].id !=msg.sender
-            ) {
+            if (idToEventNFT[i].eventId != 0) {
                 currentId = i + 1;
-               EventVoucher storage currentItem = idToEventNFT[currentId];
+                EventVoucher storage currentItem = idToEventNFTVoucher[
+                    currentId
+                ];
                 items[currentIndex] = currentItem;
                 currentIndex += 1;
             }
         }
         return items;
- }
- // for buyer to get a list of nft collection
- function getPurchaisedNFTs() public returns(EventNFT memory []){
-    uint totalItemCount = _tokenIds.current();
+    }
+
+    // for buyer to get a list of nft collection
+    function getPurchaisedNFTs() public view returns (EventNFT[] memory) {
+        uint totalItemCount = _eventIds.current();
         uint itemCount = 0;
         uint currentIndex = 0;
         uint currentId;
-        
+
         for (uint i = 0; i < totalItemCount; i++) {
-            if (
-              idToEventNFT[i].buyer ==msg.sender
-            ) {
+            if (idToEventNFT[i].buyer == msg.sender) {
                 itemCount += 1;
             }
         }
 
- 
-       EventNFT[] memory items = new  EventNFT[](itemCount);
+        EventNFT[] memory items = new EventNFT[](itemCount);
         for (uint i = 0; i < totalItemCount; i++) {
-            if (
-              idToEventNFT[i].buyer ==msg.sender
-            ) {
+            if (idToEventNFT[i].buyer == msg.sender) {
                 currentId = i + 1;
-               EventNFT storage currentItem = idToEventNFT[currentId];
+                EventNFT storage currentItem = idToEventNFT[currentId];
                 items[currentIndex] = currentItem;
                 currentIndex += 1;
             }
         }
         return items;
- }
+    }
 
     function _verify(
         EventVoucher calldata voucher,
