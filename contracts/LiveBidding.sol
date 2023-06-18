@@ -1,27 +1,46 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract LiveBidding {
+contract LiveTipping {
     uint internal totalBidAmount = 0;
     uint internal maxBidAmt = 0;
     uint internal id = 0;
-    mapping(uint => uint) amtToid;
+    struct Bidder {
+        uint id;
+        uint totalTip;
+        bool oldBidder;
+    }
+    mapping(address => Bidder) addToBidder;
     mapping(uint => address) idToadd;
 
     function LiveBidding() public payable {
-        amtToid[msg.value] = id;
+        require(msg.value > 0, "Tip must be greater than zero");
+        uint currentTip = addToBidder[msg.sender].totalTip;
+        uint updateTip = currentTip + msg.value;
+        addToBidder[msg.sender] = Bidder(id, updateTip, true);
         idToadd[id] = msg.sender;
-        id++;
-        totalBidAmount = msg.value + totalBidAmount;
-        if (msg.value > maxBidAmt) {
-            maxBidAmt = msg.value;
+        if (addToBidder[msg.sender].oldBidder == false) {
+            id++;
         }
+        totalBidAmount = msg.value + totalBidAmount;
     }
 
-    function getHighestBidder() public view returns (address) {
-        uint maxAmt = maxBidAmt;
-        uint idOfRecipient = amtToid[maxAmt];
-        address recipient = idToadd[idOfRecipient];
+    function getHighestBidder() public returns (address) {
+        uint currTip = 0;
+        address recipient;
+        for (uint i = 0; i <= id; i++) {
+            address checkAdd = idToadd[i];
+            currTip = addToBidder[checkAdd].totalTip;
+            if (currTip > maxBidAmt) {
+                maxBidAmt = currTip;
+            }
+        }
+        for (uint i = 0; i <= id; i++) {
+            address checkAdd = idToadd[i];
+            if (addToBidder[checkAdd].totalTip == maxBidAmt) {
+                recipient = checkAdd;
+            }
+        }
         return recipient;
     }
 
